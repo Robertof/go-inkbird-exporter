@@ -39,7 +39,7 @@ type Recurring struct {
   suspended atomic.Bool
 
   signal chan signal
-  wakeUpWg sync.WaitGroup
+  wakeUpMu sync.Mutex
 }
 
 func NewRecurring(h *ble.Handle, devices []device.Device) *Recurring {
@@ -77,13 +77,12 @@ func (s *Recurring) wakeUpIfNeeded() bool {
 
 func (s *Recurring) wakeUpAndBlockIfNeeded(ctx context.Context) {
   // wait if another goroutine has already sent the wake up signal.
-  s.wakeUpWg.Wait()
+  s.wakeUpMu.Lock()
+  defer s.wakeUpMu.Unlock()
 
   if s.wakeUpIfNeeded() {
     // wait until wake up is complete to proceed and block other goroutines trying to do
     // blocking reads.
-    s.wakeUpWg.Add(1)
-
     select {
     case <-ctx.Done():
     case sig := <-s.signal:
@@ -91,9 +90,6 @@ func (s *Recurring) wakeUpAndBlockIfNeeded(ctx context.Context) {
         panic("unexpected signal")
       }
     }
-
-    // unblock other goroutines
-    s.wakeUpWg.Done()
   }
 }
 
