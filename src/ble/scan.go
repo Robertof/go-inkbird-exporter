@@ -73,10 +73,15 @@ func (h *Handle) ScanAddresses(
   callback := func(a Advertisement) {
     addr := strings.ToLower(a.Addr().String())
 
-    // in case the caller did not opt-in to the allow-list, filter advertisements here as well
-    if ch, ok := addrMap[addr]; !ok {
+    // the BLE lib could send an advertisement even after `Scan()` returns. do not waste
+    // time enqueueing data if we're done.
+    select {
+    case <-ctx.Done():
       return
-    } else {
+    default:
+    }
+
+    if ch, ok := addrMap[addr]; ok {
       log.Trace().
         Str("Advertisement", fmt.Sprintf("%+v", a)).
         Msg("ble: received advertisement, enqueueing")
@@ -107,11 +112,6 @@ func (h *Handle) ScanAddresses(
   defer cancel()
 
   err := h.dev.Scan(ctx, false, callback)
-
-  // close all leftover channels
-  for _, ch := range addrMap {
-    close(ch)
-  }
 
   // swallow context.Canceled errors which are caused by our explicit cancellations.
   if errors.Is(err, context.Canceled) {
