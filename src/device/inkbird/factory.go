@@ -1,12 +1,12 @@
 package inkbird
 
 import (
-	"fmt"
-	"net"
-	"strings"
+  "fmt"
+  "net"
+  "strings"
 
-	"github.com/robertof/go-inkbird-exporter/device"
-	"github.com/rs/zerolog/log"
+  "github.com/robertof/go-inkbird-exporter/device"
+  "github.com/rs/zerolog/log"
 )
 
 type Factory struct{}
@@ -41,7 +41,7 @@ func (f *Factory) FromSpec(spec device.DeviceSpec) (device.Device, error) {
 }
 
 func (f *Factory) Help() string {
-	return `Supported parameters:
+  return `Supported parameters:
 addr (string, required): MAC address of this Inkbird device
 name (string, required): Name of this Inkbird device
 connect (bool): Connect to the device instead of scanning. Disables battery measurements. Increases reliability when battery is low.`

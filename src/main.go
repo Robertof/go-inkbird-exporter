@@ -1,24 +1,24 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+  "context"
+  "fmt"
+  "net"
+  "net/http"
+  "os"
+  "os/signal"
+  "syscall"
+  "time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/robertof/go-inkbird-exporter/ble"
-	"github.com/robertof/go-inkbird-exporter/collector"
-	"github.com/robertof/go-inkbird-exporter/device"
-	"github.com/robertof/go-inkbird-exporter/metrics"
-	"github.com/robertof/go-inkbird-exporter/utils"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+  "github.com/prometheus/client_golang/prometheus"
+  "github.com/prometheus/client_golang/prometheus/promhttp"
+  "github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/collector"
+  "github.com/robertof/go-inkbird-exporter/device"
+  "github.com/robertof/go-inkbird-exporter/metrics"
+  "github.com/robertof/go-inkbird-exporter/utils"
+  "github.com/rs/zerolog"
+  "github.com/rs/zerolog/log"
 )
 
 func main() {

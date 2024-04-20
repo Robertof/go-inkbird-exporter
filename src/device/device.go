@@ -1,8 +1,8 @@
 package device
 
 import (
-	"errors"
-	"net"
+  "errors"
+  "net"
 )
 
 var (

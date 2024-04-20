@@ -1,15 +1,15 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"os"
-	"time"
+  "flag"
+  "fmt"
+  "os"
+  "time"
 
-	"github.com/robertof/go-inkbird-exporter/ble"
-	"github.com/robertof/go-inkbird-exporter/collector"
-	"github.com/robertof/go-inkbird-exporter/device"
-	"github.com/robertof/go-inkbird-exporter/device/inkbird"
+  "github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/collector"
+  "github.com/robertof/go-inkbird-exporter/device"
+  "github.com/robertof/go-inkbird-exporter/device/inkbird"
 )
 
 type config struct {

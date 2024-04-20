@@ -1,11 +1,11 @@
 package metrics
 
 import (
-	"strconv"
-	"time"
+  "strconv"
+  "time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/robertof/go-inkbird-exporter/device"
+  "github.com/prometheus/client_golang/prometheus"
+  "github.com/robertof/go-inkbird-exporter/device"
 )
 
 var (

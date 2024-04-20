@@ -1,9 +1,9 @@
 package model
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/robertof/go-inkbird-exporter/device"
+  "github.com/robertof/go-inkbird-exporter/device"
 )
 
 type Result struct {
@@ -20,6 +20,6 @@ func (c Result) String() string {
 }
 
 type DeviceResult struct {
-	device.Device
-	Result
+  device.Device
+  Result
 }

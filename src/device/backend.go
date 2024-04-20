@@ -1,7 +1,7 @@
 package device
 
 import (
-	"github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/ble"
 )
 
 // PassiveBackendScanType is the BLE scan type used to discover the device.
@@ -21,7 +21,7 @@ type PassiveBackend interface {
 
 // ActiveBackend represents a device that parses data using an established device connection.
 type ActiveBackend interface {
-	Read(c ble.Client) (Reading, error)
+  Read(c ble.Client) (Reading, error)
 }
 
 type Backend any

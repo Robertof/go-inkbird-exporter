@@ -1,15 +1,15 @@
 package inkbird
 
 import (
-	"github.com/pkg/errors"
-	"github.com/robertof/go-inkbird-exporter/ble"
-	"github.com/robertof/go-inkbird-exporter/device"
+  "github.com/pkg/errors"
+  "github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/device"
 )
 
 type backendPassive struct {}
 
 func (c backendPassive) ScanType() device.PassiveBackendScanType {
-	return device.PassiveBackendScanTypeActive
+  return device.PassiveBackendScanTypeActive
 }
 
 func (c backendPassive) ParseAdvertisement(a ble.Advertisement) (reading device.Reading, err error) {

@@ -1,10 +1,10 @@
 package inkbird
 
 import (
-	"fmt"
-	"net"
+  "fmt"
+  "net"
 
-	"github.com/robertof/go-inkbird-exporter/device"
+  "github.com/robertof/go-inkbird-exporter/device"
 )
 
 type Device struct {

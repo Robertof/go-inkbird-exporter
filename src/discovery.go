@@ -1,14 +1,14 @@
 package main
 
 import (
-	"context"
-	"errors"
-	"time"
+  "context"
+  "errors"
+  "time"
 
-	"github.com/rs/zerolog/log"
-	"golang.org/x/exp/maps"
+  "github.com/rs/zerolog/log"
+  "golang.org/x/exp/maps"
 
-	"github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/ble"
 )
 
 func doDeviceDiscovery(cfg config) {

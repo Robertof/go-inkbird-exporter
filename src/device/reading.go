@@ -1,9 +1,9 @@
 package device
 
 import (
-	"fmt"
-	"strconv"
-	"strings"
+  "fmt"
+  "strconv"
+  "strings"
 )
 
 type ProbeType uint8

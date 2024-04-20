@@ -1,17 +1,17 @@
 package utils
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/rs/zerolog"
+  "github.com/rs/zerolog"
 )
 
 func ToZeroLogArray[T fmt.Stringer](arr []T) (ret *zerolog.Array) {
-	ret = zerolog.Arr()
+  ret = zerolog.Arr()
 
-	for _, elem := range arr {
-		ret = ret.Str(elem.String())
-	}
+  for _, elem := range arr {
+    ret = ret.Str(elem.String())
+  }
 
-	return ret
+  return ret
 }

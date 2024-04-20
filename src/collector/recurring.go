@@ -1,14 +1,14 @@
 package collector
 
 import (
-	"context"
-	"sync"
-	"sync/atomic"
-	"time"
+  "context"
+  "sync"
+  "sync/atomic"
+  "time"
 
-	"github.com/robertof/go-inkbird-exporter/ble"
-	"github.com/robertof/go-inkbird-exporter/device"
-	"github.com/rs/zerolog/log"
+  "github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/device"
+  "github.com/rs/zerolog/log"
 )
 
 type signal uint8

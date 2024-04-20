@@ -1,14 +1,14 @@
 package ble
 
 import (
-	"strconv"
-	"strings"
+  "strconv"
+  "strings"
 )
 
 type Flags int
 
 const (
-	// Run active scans rather than passive scans (requiring explicit responses from peripherals).
+  // Run active scans rather than passive scans (requiring explicit responses from peripherals).
   FlagScanTypeActive Flags = 1 << iota
   // Enable an allowlist for scans. Must be configured with `SetAllowListedAddresses()`.
   FlagEnableDeviceAllowList

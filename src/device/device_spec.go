@@ -1,9 +1,9 @@
 package device
 
 import (
-	"strings"
+  "strings"
 
-	"github.com/rs/zerolog/log"
+  "github.com/rs/zerolog/log"
 )
 
 type DeviceSpec map[string]string

@@ -1,15 +1,15 @@
 package ble
 
 import (
-	"fmt"
-	"net"
+  "fmt"
+  "net"
 
-	"github.com/go-ble/ble"
-	"github.com/go-ble/ble/linux"
-	"github.com/go-ble/ble/linux/hci/cmd"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/robertof/go-inkbird-exporter/utils"
-	"github.com/rs/zerolog/log"
+  "github.com/go-ble/ble"
+  "github.com/go-ble/ble/linux"
+  "github.com/go-ble/ble/linux/hci/cmd"
+  "github.com/prometheus/client_golang/prometheus"
+  "github.com/robertof/go-inkbird-exporter/utils"
+  "github.com/rs/zerolog/log"
 )
 
 const (
@@ -124,8 +124,8 @@ func (h *Handle) SetAllowListedAddresses(a []net.HardwareAddr) error {
     var res cmd.LEAddDeviceToWhiteListRP
 
     err := h.dev.HCI.Send(&cmd.LEAddDeviceToWhiteList{
-    	AddressType: 0x00, // public
-    	Address:     [6]byte{
+      AddressType: 0x00, // public
+      Address:     [6]byte{
         // flip due to endianness
         bytes[5],
         bytes[4],

@@ -1,16 +1,16 @@
 package collector
 
 import (
-	"context"
-	"fmt"
-	"time"
+  "context"
+  "fmt"
+  "time"
 
-	"github.com/robertof/go-inkbird-exporter/ble"
-	"github.com/robertof/go-inkbird-exporter/collector/model"
-	"github.com/robertof/go-inkbird-exporter/device"
-	"github.com/robertof/go-inkbird-exporter/utils"
-	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
+  "github.com/robertof/go-inkbird-exporter/ble"
+  "github.com/robertof/go-inkbird-exporter/collector/model"
+  "github.com/robertof/go-inkbird-exporter/device"
+  "github.com/robertof/go-inkbird-exporter/utils"
+  "github.com/rs/zerolog/log"
+  "golang.org/x/sync/errgroup"
 )
 
 const (
