@@ -184,6 +184,9 @@ func (s *Recurring) Start(
         Msg("Suspending recurring collector due to inactivity. If you see this message often, " +
             "you probably need to adjust the collection interval with '-interval'.")
 
+      // disconnect all devices when idling
+      s.ble.DisconnectAll()
+
       // wait until resumed
       select {
       case <-ctx.Done():

@@ -38,6 +38,19 @@ func isBBQDevice(deviceName string) bool {
   return strings.Contains(deviceName, "xbbq") || strings.Contains(deviceName, "ibbq")
 }
 
+func parseTHProbeType(t byte) device.ProbeType {
+  switch t {
+  case 0:
+    return device.ProbeTypeInternal
+  case 1:
+  case 3:
+    return device.ProbeTypeExternal
+  }
+
+  log.Warn().Int("ProbeType", int(t)).Msg("inkbird: received unknown probe type")
+  return device.ProbeTypeUnspecified
+}
+
 func parseTHAdvertisement(deviceName string, data []byte) (reading device.Reading, err error) {
   bo := binary.LittleEndian
   crc := crc16(data[0:5])
@@ -62,20 +75,7 @@ func parseTHAdvertisement(deviceName string, data []byte) (reading device.Readin
     reading.RelativeHumidity = float32(rawHumidity) / 100.0
   }
 
-  switch probeType {
-  case 0:
-    reading.ProbeType = device.ProbeTypeInternal
-    break
-  case 1:
-  case 3:
-    reading.ProbeType = device.ProbeTypeExternal
-    break
-  default:
-    log.Warn().Int("ProbeType", int(probeType)).Msg("inkbird: received unknown probe type")
-    reading.ProbeType = device.ProbeTypeUnspecified
-    break
-  }
-
+  reading.ProbeType = parseTHProbeType(probeType)
   reading.HasBatteryLevel = true
   reading.BatteryLevel = battery
 
@@ -128,20 +128,4 @@ func parseBBQAdvertisement(addr ble.Addr, data []byte) (reading device.Reading, 
   reading.ProbeType = device.ProbeTypeExternal
 
   return reading, nil
-}
-
-func (d *Device) ParseAdvertisement(a ble.Advertisement) (reading device.Reading, err error) {
-  manufacturerData := a.ManufacturerData()
-
-  if manufacturerData == nil || len(manufacturerData) == 0 {
-    return reading, device.ErrInvalidData
-  }
-
-  if len(manufacturerData) == 9 {
-    return parseTHAdvertisement(a.LocalName(), manufacturerData)
-  } else if isBBQDevice(a.LocalName()) {
-    return parseBBQAdvertisement(a.Addr(), manufacturerData)
-  } else {
-    return reading, errors.Wrap(device.ErrInvalidData, "inkbird: unexpected manufacturer data")
-  }
 }

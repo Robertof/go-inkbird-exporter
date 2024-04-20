@@ -3,84 +3,51 @@ package ble
 import (
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 
 	"github.com/go-ble/ble"
 	"github.com/go-ble/ble/linux"
 	"github.com/go-ble/ble/linux/hci/cmd"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robertof/go-inkbird-exporter/utils"
 	"github.com/rs/zerolog/log"
 )
 
+const (
+  ErrInvalidHandle = ble.ErrInvalidHandle
+  ErrReadNotPerm = ble.ErrReadNotPerm
+)
+
 type Advertisement = ble.Advertisement
-
-type Flags int
-
-const (
-  FlagScanTypeActive Flags = 1 << iota
-  FlagEnableDeviceAllowList
-)
-
-func (f Flags) String() string {
-  var flags []string
-
-  if f & FlagScanTypeActive == FlagScanTypeActive {
-    flags = append(flags, "active scan")
-  }
-
-  if f & FlagEnableDeviceAllowList == FlagEnableDeviceAllowList {
-    flags = append(flags, "device allow-list")
-  }
-
-  if len(flags) == 0 {
-    return "none"
-  }
-
-  return strings.Join(flags, ", ")
-}
-
-type scanType uint8
-
-const (
-  scanTypePassive scanType = iota
-  scanTypeActive
-)
-
-func (s scanType) String() string {
-  switch s {
-  case scanTypeActive:
-    return "Active"
-  case scanTypePassive:
-    return "Passive"
-  default:
-    panic("unknown scanType value: " + strconv.Itoa(int(s)))
-  }
-}
-
-type filterPolicy uint8
-
-const (
-  filterPolicyAcceptAll filterPolicy = iota
-  filterPolicyAllowListedOnly
-)
-
-func (f filterPolicy) String() string {
-  switch f {
-  case filterPolicyAcceptAll:
-    return "Accept All"
-  case filterPolicyAllowListedOnly:
-    return "Allow-listed Only"
-  default:
-    panic("unknown filterPolicy value: " + strconv.Itoa(int(f)))
-  }
-}
+type Characteristic = ble.Characteristic
+type Client = ble.Client
 
 type Handle struct {
   dev *linux.Device
+  connPool *connectionPool
+}
+
+func UUID16(i uint16) ble.UUID {
+  return ble.UUID16(i)
+}
+
+func RegisterMetrics(reg prometheus.Registerer) {
+  reg.MustRegister(
+    successfulConnectionsCounter,
+    failedConnectionsCounter,
+    connectionsFromPoolCounter,
+    disconnectsCounter,
+  )
 }
 
 func Init(deviceId int, flags Flags) (*Handle, error) {
+  return InitWithConnParams(
+    deviceId,
+    ConnParamsDefault,
+    flags,
+  )
+}
+
+func InitWithConnParams(deviceId int, connParams ConnParams, flags Flags) (*Handle, error) {
   var scanType scanType = scanTypePassive
   var filterPolicy filterPolicy = filterPolicyAcceptAll
 
@@ -95,6 +62,7 @@ func Init(deviceId int, flags Flags) (*Handle, error) {
   log.Debug().
     Stringer("ScanType", scanType).
     Stringer("FilterPolicy", filterPolicy).
+    Stringer("ConnParams", &connParams).
     Stringer("Flags", flags).
     Int("DeviceID", deviceId).
     Msg("Initializing Bluetooth device")
@@ -108,6 +76,7 @@ func Init(deviceId int, flags Flags) (*Handle, error) {
       OwnAddressType:       0x00,                // 0x00: public, 0x01: random
       ScanningFilterPolicy: uint8(filterPolicy), // 0x00: accept all, 0x01: ignore non-allow-listed.
     }),
+    ble.OptConnParams(connParams.AdapterOptions()),
   )
 
   if err != nil {
@@ -116,9 +85,15 @@ func Init(deviceId int, flags Flags) (*Handle, error) {
 
   ble.SetDefaultDevice(dev)
 
-  return &Handle{
+  h := &Handle{
     dev: dev,
-  }, nil
+  }
+
+  if flags & FlagPersistConnections == FlagPersistConnections {
+    h.connPool = initConnectionPool()
+  }
+
+  return h, nil
 }
 
 func (h *Handle) SetAllowListedAddresses(a []net.HardwareAddr) error {
@@ -171,4 +146,8 @@ func (h *Handle) SetAllowListedAddresses(a []net.HardwareAddr) error {
   }
 
   return nil
+}
+
+func (h *Handle) Stop() {
+  h.dev.Stop()
 }

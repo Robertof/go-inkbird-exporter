@@ -3,8 +3,6 @@ package device
 import (
 	"errors"
 	"net"
-
-	"github.com/go-ble/ble"
 )
 
 var (
@@ -12,16 +10,10 @@ var (
   ErrCorruptedData = errors.New("corrupted data")
 )
 
-type Flags uint8
-
-const (
-  FlagRequiresBleActiveScan Flags = 1 << iota
-)
 
 type Device interface {
   Name() string
   Addr() net.HardwareAddr
-  Flags() Flags
-  ParseAdvertisement(a ble.Advertisement) (Reading, error)
+  Backend() Backend
   String() string
 }

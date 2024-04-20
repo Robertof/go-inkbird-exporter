@@ -24,5 +24,6 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/rs/zerolog v1.29.1
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df
+	golang.org/x/sync v0.7.0
 	golang.org/x/sys v0.8.0 // indirect
 )

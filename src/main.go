@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -49,6 +51,8 @@ func main() {
     Int("BluetoothDeviceID", cfg.BluetoothDeviceId).
     Msg("Starting with the specified configuration")
 
+  observeSignals()
+
   bleHandle := initBle(cfg)
   initialReadings := collectInitialReadings(cfg, bleHandle)
 
@@ -66,8 +70,12 @@ func main() {
     registry,
   )
 
+  if cfg.EnableMetamonitoring {
+    ble.RegisterMetrics(registry)
+  }
+
   go coll.Start(
-    context.Background(),
+    ble.WrapContextWithSigHandler(context.WithCancel(context.Background())),
     cfg.CollectionInterval,
     collector.CollectionOptions{
       TimeoutPerAttempt: cfg.CollectionTimeout,
@@ -94,12 +102,16 @@ func initBle(cfg config) *ble.Handle {
   for i, dev := range cfg.Devices {
     deviceAddresses[i] = dev.Addr()
 
-    if dev.Flags() & device.FlagRequiresBleActiveScan == device.FlagRequiresBleActiveScan {
+    if backend, ok := dev.Backend().(device.PassiveBackend); ok && backend.ScanType() == device.PassiveBackendScanTypeActive {
       bleFlags |= ble.FlagScanTypeActive
     }
   }
 
-  bleHandle, err := ble.Init(cfg.BluetoothDeviceId, bleFlags)
+  if cfg.PersistConnections {
+    bleFlags |= ble.FlagPersistConnections
+  }
+
+  bleHandle, err := ble.InitWithConnParams(cfg.BluetoothDeviceId, cfg.BluetoothConnParams, bleFlags)
 
   if err != nil {
     log.Fatal().Err(err).Msg("Failed to initialize Bluetooth device")
@@ -109,9 +121,53 @@ func initBle(cfg config) *ble.Handle {
 
   if err != nil {
     log.Error().Err(err).Msg("Failed to set device allow list")
+
+    // this essentially makes the program useless, since we have the flag to enable the allow
+    // list set. try to recover by re-initializing the BLE handle without that flag.
+    bleHandle.Stop()
+    bleFlags &= ^ble.FlagEnableDeviceAllowList
+
+    bleHandle, err = ble.InitWithConnParams(
+      cfg.BluetoothDeviceId,
+      cfg.BluetoothConnParams,
+      bleFlags,
+    )
+
+    if err != nil {
+      log.Fatal().Err(err).Msg("Failed to re-initialize Bluetooth device")
+    }
   }
 
   return bleHandle
+}
+
+func observeSignals() {
+  c := make(chan os.Signal, 1)
+
+  go func() {
+    for s := range c {
+      var nextLevel zerolog.Level
+
+      switch s {
+      case syscall.SIGUSR1:
+        nextLevel = zerolog.GlobalLevel() - 1
+      case syscall.SIGUSR2:
+        nextLevel = zerolog.GlobalLevel() + 1
+      }
+
+      if nextLevel < zerolog.TraceLevel {
+        nextLevel = zerolog.TraceLevel
+      } else if nextLevel > zerolog.PanicLevel {
+        nextLevel = zerolog.PanicLevel
+      }
+
+      zerolog.SetGlobalLevel(nextLevel)
+
+      log.Warn().Stringer("Level", nextLevel).Msg("Received signal: updating log level")
+    }
+  }()
+
+  signal.Notify(c, syscall.SIGUSR1, syscall.SIGUSR2)
 }
 
 func collectInitialReadings(cfg config, bleHandle *ble.Handle) (res map[device.Device]device.Reading) {
@@ -121,7 +177,7 @@ func collectInitialReadings(cfg config, bleHandle *ble.Handle) (res map[device.D
 
   readings, err := collector.CollectReadingsWithOptions(
     bleHandle,
-    context.Background(),
+    ble.WrapContextWithSigHandler(context.WithCancel(context.Background())),
     cfg.Devices,
     collector.CollectionOptions{
       TimeoutPerAttempt: cfg.InitialCollectionTimeout,

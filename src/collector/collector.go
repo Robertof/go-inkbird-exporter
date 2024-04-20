@@ -1,18 +1,16 @@
 package collector
 
 import (
-  "context"
-  "errors"
-  "fmt"
-  "net"
-  "strings"
-  "sync"
-  "time"
+	"context"
+	"fmt"
+	"time"
 
-  "github.com/robertof/go-inkbird-exporter/ble"
-  "github.com/robertof/go-inkbird-exporter/device"
-  "github.com/robertof/go-inkbird-exporter/utils"
-  "github.com/rs/zerolog/log"
+	"github.com/robertof/go-inkbird-exporter/ble"
+	"github.com/robertof/go-inkbird-exporter/collector/model"
+	"github.com/robertof/go-inkbird-exporter/device"
+	"github.com/robertof/go-inkbird-exporter/utils"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -29,31 +27,44 @@ type CollectionOptions struct {
   attempt int
 }
 
-type CollectionResult struct {
-  Reading device.Reading
-  Error error
+type deviceWithBackend[Backend any] struct {
+  device.Device
+  backend Backend
 }
 
-func (c CollectionResult) String() string {
-  if c.Error != nil {
-    return fmt.Sprintf("result:error(%v)", c.Error)
-  } else {
-    return fmt.Sprintf("result:success(%v)", c.Reading)
+func selectDevicesByBackend(devices []device.Device) (
+  passive []deviceWithBackend[device.PassiveBackend],
+  active []deviceWithBackend[device.ActiveBackend],
+) {
+  for _, dev := range devices {
+    switch backend := dev.Backend().(type) {
+    case device.ActiveBackend:
+      active = append(active, deviceWithBackend[device.ActiveBackend]{
+        Device: dev,
+        backend: backend,
+      })
+    case device.PassiveBackend:
+      passive = append(passive, deviceWithBackend[device.PassiveBackend]{
+        Device: dev,
+        backend: backend,
+      })
+    default:
+      panic(fmt.Sprintf(
+        "device %q has invalid backend %q, must be one of ActiveBackend or PassiveBackend",
+        dev,
+        backend,
+      ))
+    }
   }
-}
 
-func newCollectionResult(reading device.Reading, error error) CollectionResult {
-  return CollectionResult{
-    Reading: reading,
-    Error: error,
-  }
+  return passive, active
 }
 
 func CollectReadings(
   handle *ble.Handle,
   ctx context.Context,
   devices []device.Device,
-) (out map[device.Device]CollectionResult, err error) {
+) (out map[device.Device]model.Result, err error) {
   return CollectReadingsWithOptions(
     handle,
     ctx,
@@ -72,24 +83,14 @@ func CollectReadingsWithOptions(
   parentCtx context.Context,
   devices []device.Device,
   options CollectionOptions,
-) (out map[device.Device]CollectionResult, err error) {
-  addresses := make([]net.HardwareAddr, len(devices))
-  deviceMap := make(map[string]device.Device)
-  out = make(map[device.Device]CollectionResult, len(devices))
-
-  var mu sync.Mutex
+) (out map[device.Device]model.Result, err error) {
+  out = make(map[device.Device]model.Result, len(devices))
 
   log.Debug().
     Array("Devices", utils.ToZeroLogArray(devices)).
     Msg("Collecting readings from devices")
 
-  {
-    i := 0
-    for _, device := range devices {
-      addresses[i] = device.Addr()
-      deviceMap[strings.ToLower(device.Addr().String())] = device
-    }
-  }
+  passiveDevices, activeDevices := selectDevicesByBackend(devices)
 
   // make sure signals are properly handled and we enforce the passed timeout.
   var ctx context.Context
@@ -101,51 +102,42 @@ func CollectReadingsWithOptions(
     ctx, cancel = context.WithCancel(parentCtx)
   }
 
-  ctx = ble.WrapContextWithSigHandler(ctx, cancel)
+  defer cancel()
 
-  err = handle.ScanAddresses(ctx, addresses, func(a ble.Advertisement) bool {
-    device := deviceMap[strings.ToLower(a.Addr().String())]
+  // collect everything in parallel and gather results.
+  var eg errgroup.Group
+  resultCh := make(chan model.DeviceResult)
 
-    if device == nil {
-      log.Warn().
-        Str("Address", a.Addr().String()).
-        Str("LocalName", a.LocalName()).
-        Hex("ManufacturerData", a.ManufacturerData()).
-        Interface("ServiceData", a.ServiceData()).
-        Msg("Received advertisement from unknown device!")
-
-      return false
-    }
-
+  if len(passiveDevices) > 0 {
     log.Trace().
-      Stringer("Device", device).
-      Str("LocalName", a.LocalName()).
-      Hex("ManufacturerData", a.ManufacturerData()).
-      Interface("ServiceData", a.ServiceData()).
-      Msg("Received advertisement from device")
+      Array("Devices", utils.ToZeroLogArray(passiveDevices)).
+      Msg("Collecting data from devices via scan")
+    eg.Go(func() error {
+      return collectViaScan(ctx, handle, passiveDevices, resultCh)
+    })
+  }
 
-    reading, err := device.ParseAdvertisement(a)
-
+  if len(activeDevices) > 0 {
     log.Trace().
-      Err(err).
-      Stringer("Reading", reading).
-      Stringer("Device", device).
-      Msg("Parsed device advertisement")
+      Array("Devices", utils.ToZeroLogArray(activeDevices)).
+      Msg("Collecting data from devices via direct connection")
+    eg.Go(func() error {
+      return collectViaConnection(ctx, handle, activeDevices, resultCh)
+    })
+  }
 
-    result := newCollectionResult(reading, err)
+  go func() {
+    err = eg.Wait()
+    close(resultCh)
+  }()
 
-    // this might be called concurrently if multiple advertisements come at once.
-    mu.Lock()
-    defer mu.Unlock()
+  for v := range resultCh {
+    log.Trace().
+      Stringer("Device", v.Device).
+      Stringer("Result", v.Result).
+      Msg("Received result for device")
 
-    out[device] = result
-
-    return err == nil // consider ourselves happy when there is no error parsing the advertisement
-  })
-
-  // swallow deadline exceeded errors if we got results for all devices
-  if errors.Is(err, context.DeadlineExceeded) && len(out) == len(devices) {
-    err = nil
+    out[v.Device] = v.Result
   }
 
   // analyze results, and retry if needed
