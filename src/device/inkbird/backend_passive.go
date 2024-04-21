@@ -25,4 +25,5 @@ func (c backendPassive) ParseAdvertisement(a ble.Advertisement) (reading device.
     return parseBBQAdvertisement(a.Addr(), manufacturerData)
   } else {
     return reading, errors.Wrap(device.ErrInvalidData, "inkbird: unexpected manufacturer data")
-  }}
+  }
+}

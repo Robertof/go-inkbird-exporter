@@ -19,8 +19,9 @@ func TestTHAdvertisement_WithHumidity(t *testing.T) {
     manufacturerData: manufacturerData,
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
@@ -51,8 +52,9 @@ func TestTHAdvertisement_WithoutHumidity(t *testing.T) {
     name: "tps",
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
@@ -84,8 +86,9 @@ func TestBBQAdvertisement_OneProbe(t *testing.T) {
     addr: ble_mod.NewAddr("28:EC:9A:2E:65:D7"),
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
@@ -117,8 +120,9 @@ func TestBBQAdvertisement_TwoProbes(t *testing.T) {
     addr: ble_mod.NewAddr("34:14:B5:AB:F4:7B"),
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
@@ -150,8 +154,9 @@ func TestBBQAdvertisement_FourProbes(t *testing.T) {
     addr: ble_mod.NewAddr("A8:E2:C1:71:67:1E"),
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
@@ -183,8 +188,9 @@ func TestBBQAdvertisement_SixProbes(t *testing.T) {
     addr: ble_mod.NewAddr("18:93:D7:35:35:59"),
   }
 
-  dev := inkbird.Device{}
-  got, err := dev.ParseAdvertisement(advertisement)
+  factory := inkbird.Factory{}
+  dev, _ := factory.FromSpec(device.NewDeviceSpec("addr=aa:bb:cc:dd:ee:ff,name=foo"))
+  got, err := dev.Backend().(device.PassiveBackend).ParseAdvertisement(advertisement)
 
   if err != nil {
     t.Fatalf("ParseAdvertisement(%q) got error: %v", manufacturerData, err)
